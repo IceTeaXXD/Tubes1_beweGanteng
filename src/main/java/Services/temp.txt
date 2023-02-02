@@ -1,0 +1,202 @@
+package Services;
+
+import Enums.*;
+import Models.*;
+
+import java.util.*;
+import java.util.stream.*;
+
+public class BotService {
+    private GameObject bot;
+    private PlayerAction playerAction;
+    private GameState gameState;
+    private int searchRadiusModifier = 200;
+    private boolean afterburnerOn = false;
+    private PlayerAction lastAction;
+    private int timeSinceLastAction;
+    private GameObject target;
+    private boolean targetIsPlayer = false;
+    private GameObject worldCenter;
+
+    public BotService() {
+        this.playerAction = new PlayerAction();
+        this.gameState = new GameState();
+    }
+
+
+    public GameObject getBot() {
+        return this.bot;
+    }
+
+    public void setBot(GameObject bot) {
+        this.bot = bot;
+    }
+
+    public PlayerAction getPlayerAction() {
+        return this.playerAction;
+    }
+
+    public void setPlayerAction(PlayerAction playerAction) {
+        this.playerAction = playerAction;
+    }
+
+    public void computeNextPlayerAction(PlayerAction playerAction) {
+        playerAction.action = PlayerActions.FORWARD;
+        playerAction.heading = new Random().nextInt(360);
+
+        // if (!gameState.getGameObjects().isEmpty()) {
+        //     var foodList = gameState.getGameObjects()
+        //             .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
+        //             .sorted(Comparator
+        //                     .comparing(item -> getDistanceBetween(bot, item)))
+        //             .collect(Collectors.toList());
+
+        //     playerAction.heading = getHeadingBetween(foodList.get(0));
+        // }
+
+        if (target == null || target == worldCenter){
+            System.out.println("Target is null or world center");
+            playerAction.heading = ResolveNewTarget();
+        }
+        else{
+            var targetWithNewValues = gameState.gameObjects.stream()
+                    .filter(gameObject -> gameObject.id == target.id)
+                    .findFirst()
+                    .orElse(null);
+            if (targetWithNewValues != null){
+                target = targetWithNewValues;
+            }
+            playerAction.heading = getHeadingBetween(target);
+            if (getDistanceBetween(bot, target) < 100){
+                System.out.println("Target is close");
+                playerAction.heading = ResolveNewTarget();
+            }
+
+            if (targetIsPlayer){
+                var targetPlayer = gameState.playerGameObjects.stream()
+                        .filter(gameObject -> gameObject.id == target.id)
+                        .findFirst()
+                        .orElse(null);
+                if (targetPlayer != null){
+                    target = targetPlayer;
+                }
+                if (getDistanceBetween(bot, target) < 100){
+                    System.out.println("Target is close");
+                    playerAction.heading = ResolveNewTarget();
+                }
+            }
+        }
+        this.playerAction = playerAction;
+    }
+
+    private int ResolveNewTarget(){
+        int heading;
+        GameObject nearestPlayer = null;
+        GameObject nearestFood = null;
+        var foodList = gameState.getGameObjects()
+                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
+                .sorted(Comparator
+                        .comparing(item -> getDistanceBetween(bot, item)))
+                .collect(Collectors.toList());
+        var playerList = gameState.getPlayerGameObjects()
+                .stream().filter(item -> item.getGameObjectType() == ObjectTypes.PLAYER)
+                .sorted(Comparator
+                        .comparing(item -> getDistanceBetween(bot, item)))
+                .collect(Collectors.toList());
+        if (playerList.size() > 0){
+            nearestPlayer = playerList.get(0);
+        }
+        if (foodList.size() > 0){
+            nearestFood = foodList.get(0);
+        }
+        
+        if (nearestPlayer != null && nearestFood != null){
+            if (getDistanceBetween(bot, nearestPlayer) < getDistanceBetween(bot, nearestFood)){
+                target = nearestPlayer;
+                targetIsPlayer = true;
+                heading = getHeadingBetween(target);
+            }
+            else{
+                target = nearestFood;
+                targetIsPlayer = false;
+                heading = getHeadingBetween(target);
+            }
+        }
+        else if (nearestPlayer != null){
+            target = nearestPlayer;
+            targetIsPlayer = true;
+            heading = getHeadingBetween(target);
+        }
+        else if (nearestFood != null){
+            target = nearestFood;
+            targetIsPlayer = false;
+            heading = getHeadingBetween(target);
+        }
+        else{
+            target = worldCenter;
+            targetIsPlayer = false;
+            heading = getHeadingBetween(target);
+        }
+
+        return heading;
+    }
+
+    private int getAttackerResolution(GameObject bot, GameObject attacker, GameObject closestFood){
+        if (closestFood == null){
+            return getOppositeDirection(bot, attacker);
+        }
+
+        var distanceToAttacker = getDistanceBetween(bot, attacker);
+        var distanceBetweenAttackerAndFood = getDistanceBetween(attacker, closestFood);
+
+        if (distanceToAttacker > attacker.getSpeed() &&
+        distanceBetweenAttackerAndFood > distanceToAttacker){
+            System.out.println("Attacker far, going for food");
+            return getDirection(bot, closestFood);
+        }else{
+            System.out.println("Running");
+            return getOppositeDirection(bot, attacker);
+        }
+    }
+
+    private int getOppositeDirection(GameObject gameObject1, GameObject gameObject2){
+        return toDegrees(Math.atan2(gameObject1.getPosition().y - gameObject2.getPosition().y,
+                gameObject1.getPosition().x - gameObject2.getPosition().x));
+    }
+
+    private int getDirection(GameObject bot, GameObject gameObject){
+        var cartesianDegrees = toDegrees(Math.atan2(gameObject.getPosition().y - bot.getPosition().y,
+                gameObject.getPosition().x - bot.getPosition().x));
+        return (cartesianDegrees + 360) % 360;
+    }
+    
+    public GameState getGameState() {
+        return this.gameState;
+    }
+
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
+        updateSelfState();
+    }
+
+    private void updateSelfState() {
+        Optional<GameObject> optionalBot = gameState.getPlayerGameObjects().stream().filter(gameObject -> gameObject.id.equals(bot.id)).findAny();
+        optionalBot.ifPresent(bot -> this.bot = bot);
+    }
+
+    private double getDistanceBetween(GameObject object1, GameObject object2) {
+        var triangleX = Math.abs(object1.getPosition().x - object2.getPosition().x);
+        var triangleY = Math.abs(object1.getPosition().y - object2.getPosition().y);
+        return Math.sqrt(triangleX * triangleX + triangleY * triangleY);
+    }
+
+    private int getHeadingBetween(GameObject otherObject) {
+        var direction = toDegrees(Math.atan2(otherObject.getPosition().y - bot.getPosition().y,
+                otherObject.getPosition().x - bot.getPosition().x));
+        return (direction + 360) % 360;
+    }
+
+    private int toDegrees(double v) {
+        return (int) (v * (180 / Math.PI));
+    }
+}
