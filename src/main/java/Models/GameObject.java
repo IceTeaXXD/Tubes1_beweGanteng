@@ -10,6 +10,7 @@ public class GameObject {
   public Integer currentHeading;
   public Position position;
   public ObjectTypes gameObjectType;
+  public Integer torpedoSalvoCount;
 
   public GameObject(UUID id, Integer size, Integer speed, Integer currentHeading, Position position, ObjectTypes gameObjectType) {
     this.id = id;
@@ -58,6 +59,14 @@ public class GameObject {
 
   public void setGameObjectType(ObjectTypes gameObjectType) {
     this.gameObjectType = gameObjectType;
+  }
+
+  public int getTorpedoSalvoCount() {
+    return torpedoSalvoCount;
+  }
+
+  public int setTorpedoSalvoCount(int torpedoSalvoCount) {
+    return this.torpedoSalvoCount = torpedoSalvoCount;
   }
 
   public static GameObject FromStateList(UUID id, List<Integer> stateList)

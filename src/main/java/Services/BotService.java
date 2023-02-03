@@ -16,7 +16,6 @@ public class BotService {
         this.gameState = new GameState();
     }
 
-
     public GameObject getBot() {
         return this.bot;
     }
@@ -34,19 +33,48 @@ public class BotService {
     }
 
     public void computeNextPlayerAction(PlayerAction playerAction) {
-        playerAction.action = PlayerActions.FORWARD;
-        playerAction.heading = new Random().nextInt(360);
-
+        // playerAction.heading = new Random().nextInt(360);
         if (!gameState.getGameObjects().isEmpty()) {
             var foodList = gameState.getGameObjects()
                     .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
                     .sorted(Comparator
                             .comparing(item -> getDistanceBetween(bot, item)))
                     .collect(Collectors.toList());
-
-            playerAction.heading = getHeadingBetween(foodList.get(0));
+            var superFoodList = gameState.getGameObjects()
+                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.SUPER_FOOD)
+                    .sorted(Comparator
+                            .comparing(item -> getDistanceBetween(bot, item)))
+                    .collect(Collectors.toList());
+            var nearestPlayer = gameState.getGameObjects()
+                    .stream().filter(item -> item.getId() != bot.getId())
+                    .sorted(Comparator
+                            .comparing(item -> getDistanceBetween(bot, item)))
+                    .collect(Collectors.toList()).get(0);
+                
+            var nearestFood = getHeadingBetween(foodList.get(0));
+            var nearestSuperFood = getHeadingBetween(superFoodList.get(0));
+            var distanceFromWorldCenter = getDistanceBetween(bot, new GameObject(UUID.randomUUID(), 0, 0, 0, new Position(0, 0), ObjectTypes.PLAYER));
+            
+            if (distanceFromWorldCenter + (1.5 * bot.size) > gameState.world.getRadius()) { // avoid edge of world
+                playerAction.heading = getHeadingBetween(new GameObject(UUID.randomUUID(), 0, 0, 0, new Position(0, 0), ObjectTypes.PLAYER));
+                playerAction.action = PlayerActions.FORWARD;
+                System.out.println("Going for center!");
+            }
+            else if (nearestFood < nearestSuperFood) {
+                playerAction.heading = nearestFood;
+                playerAction.action = PlayerActions.FORWARD;
+                System.out.println("Food!");
+            }else if (nearestSuperFood < nearestFood){
+                playerAction.heading = nearestSuperFood;
+                playerAction.action = PlayerActions.FORWARD;
+                System.out.println("Superfood!");
+            }
+            if (nearestPlayer.size > bot.size && getDistanceBetween(bot, nearestPlayer) < 10) {
+                playerAction.heading = getHeadingBetween(nearestPlayer) + 180;
+                playerAction.action = PlayerActions.FORWARD;
+                System.out.println("Run away!");
+            }
         }
-
         this.playerAction = playerAction;
     }
 
@@ -79,6 +107,4 @@ public class BotService {
     private int toDegrees(double v) {
         return (int) (v * (180 / Math.PI));
     }
-
-
 }
