@@ -3,18 +3,26 @@ package Enums;
 public enum PlayerActions {
   FORWARD(1),
   STOP(2),
-  START_AFTERBURNER(3),
-  STOP_AFTERBURNER(4),
-  FIRE_TORPEDOES(5),
-  FIRE_SUPERNOVA(6),
-  DETONATE_SUPERNOVA(7),
-  FIRE_TELEPORTER(8),
+  STARTAFTERBURNER(3),
+  STOPAFTERBURNER(4),
+  FIRETORPEDOES(5),
+  FIRESUPERNOVA(6),
+  DETONATESUPERNOVA(7),
+  FIRETELEPORT(8),
   TELEPORT(9),
-  USE_SHIELD(10);
+  ACTIVATESHIELD(10);
 
   public final Integer value;
 
   private PlayerActions(Integer value) {
     this.value = value;
+  }
+
+  public static PlayerActions valueOf(Integer value) {
+    for (PlayerActions playerAction : PlayerActions.values()) {
+      if (playerAction.value == value) return playerAction;
+    }
+
+    throw new IllegalArgumentException("Value not found");
   }
 }

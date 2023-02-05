@@ -10,7 +10,10 @@ public class BotService {
     private GameObject bot;
     private PlayerAction playerAction;
     private GameState gameState;
-
+    public GameObject worldCenter = new GameObject(UUID.randomUUID(), 0, 0, 0, new Position(0, 0), null, 0, 0, 0, 0, 0);
+    public String botAction;
+    public Integer teleportTick;
+    public boolean isTeleporting;
     public BotService() {
         this.playerAction = new PlayerAction();
         this.gameState = new GameState();
@@ -33,8 +36,8 @@ public class BotService {
     }
 
     public void computeNextPlayerAction(PlayerAction playerAction) {
-        // playerAction.heading = new Random().nextInt(360);
         if (!gameState.getGameObjects().isEmpty()) {
+            System.out.println(bot.getTeleporterCount());
             var foodList = gameState.getGameObjects()
                     .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
                     .sorted(Comparator
@@ -45,38 +48,109 @@ public class BotService {
                     .sorted(Comparator
                             .comparing(item -> getDistanceBetween(bot, item)))
                     .collect(Collectors.toList());
-            var nearestPlayer = gameState.getGameObjects()
-                    .stream().filter(item -> item.getId() != bot.getId())
+            var nearestPlayer = gameState.getPlayerGameObjects()
+                    .stream().filter(item -> item.id != bot.id)
                     .sorted(Comparator
                             .comparing(item -> getDistanceBetween(bot, item)))
                     .collect(Collectors.toList()).get(0);
-                
             var nearestFood = getHeadingBetween(foodList.get(0));
+            var nearestGasCloud = gameState.getGameObjects()
+                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.GAS_CLOUD)
+                    .sorted(Comparator
+                            .comparing(item -> getDistanceBetween(bot, item)))
+                    .collect(Collectors.toList()).get(0);
+            var nearestAsteroid = gameState.getGameObjects()
+                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.ASTEROID_FIELD)
+                    .sorted(Comparator
+                            .comparing(item -> getDistanceBetween(bot, item)))
+                    .collect(Collectors.toList()).get(0);
             var nearestSuperFood = getHeadingBetween(superFoodList.get(0));
-            var distanceFromWorldCenter = getDistanceBetween(bot, new GameObject(UUID.randomUUID(), 0, 0, 0, new Position(0, 0), ObjectTypes.PLAYER));
-            
-            if (distanceFromWorldCenter + (1.5 * bot.size) > gameState.world.getRadius()) { // avoid edge of world
-                playerAction.heading = getHeadingBetween(new GameObject(UUID.randomUUID(), 0, 0, 0, new Position(0, 0), ObjectTypes.PLAYER));
-                playerAction.action = PlayerActions.FORWARD;
-                System.out.println("Going for center!");
-            }
-            else if (nearestFood < nearestSuperFood) {
+            var distanceFromWorldCenter = getDistanceBetween(bot, worldCenter);
+            var distanceFromGasCloud = getDistanceBetween(bot, nearestGasCloud);
+            var distanceFromAsteroid = getDistanceBetween(bot, nearestAsteroid);
+            // var torpedoList = gameState.getGameObjects()
+            //         .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TORPEDO_SALVO)
+            //         .sorted(Comparator
+            //                 .comparing(item -> getDistanceBetween(bot, item)))
+            //         .collect(Collectors.toList());
+
+            System.out.println("Nearest player size: " + nearestPlayer.size);
+            System.out.println("Bot size: " + bot.size);
+            System.out.println("Distance from nearest player: " + getDistanceBetween(bot, nearestPlayer));
+
+            if (nearestFood < nearestSuperFood) {
                 playerAction.heading = nearestFood;
                 playerAction.action = PlayerActions.FORWARD;
-                System.out.println("Food!");
+                botAction = "Food!";
             }else if (nearestSuperFood < nearestFood){
                 playerAction.heading = nearestSuperFood;
                 playerAction.action = PlayerActions.FORWARD;
-                System.out.println("Superfood!");
+                botAction = "Super food!";
             }
-            if (nearestPlayer.size > bot.size && getDistanceBetween(bot, nearestPlayer) < 10) {
-                playerAction.heading = getHeadingBetween(nearestPlayer) + 180;
+            if (nearestPlayer.size > bot.size && bot.size > 30) {
+                if (getDistanceBetween(bot, nearestPlayer) < 150){
+                    playerAction.heading = (getHeadingBetween(nearestPlayer) + 90) % 360;
+                    playerAction.action = PlayerActions.FORWARD;
+                    botAction = "Avoiding bigger player!";
+                }else{
+                    playerAction.heading = getHeadingBetween(nearestPlayer);
+                    playerAction.action = PlayerActions.FIRETORPEDOES;
+                    botAction = "Attacking bigger player!";
+                }
+            }else if (nearestPlayer.size < bot.size && bot.size > 30) {
+                if (bot.torpedoSalvoCount > 0){
+                    playerAction.heading = getHeadingBetween(nearestPlayer);
+                    playerAction.action = PlayerActions.FIRETORPEDOES;
+                    botAction = "Attacking smaller player!";
+                }
+                if (getDistanceBetween(bot, nearestPlayer) < 200){
+                    playerAction.heading = getHeadingBetween(nearestPlayer);
+                    playerAction.action = PlayerActions.FORWARD;
+                    botAction = "Chasing smaller player!";
+                    if (teleportTick != null){
+                        if (gameState.getWorld().getCurrentTick() - teleportTick > 10){
+                            playerAction.action = PlayerActions.TELEPORT;
+                            teleportTick = null;
+                        }
+                    }   
+                    if (bot.getTeleporterCount() > 0 && teleportTick == null && nearestPlayer.size < bot.size + 40){
+                        playerAction.action = PlayerActions.FIRETELEPORT;
+                        botAction = "Teleporting!TeleportingTeleportingTeleportingTeleportingTeleportingTeleportingTeleportingTeleporting";
+                        teleportTick = gameState.getWorld().getCurrentTick();
+                    }
+                }
+            }
+
+            // if (bot.shieldCount > 0 && getDistanceBetween(bot, torpedoList.get(0))) {
+            //     playerAction.action = PlayerActions.ACTIVATESHIELD;
+            //     System.out.println("Shield!");
+            // }
+
+            if (distanceFromAsteroid < 10) {
+                playerAction.heading = (getHeadingBetween(nearestAsteroid) + 90) % 360;
                 playerAction.action = PlayerActions.FORWARD;
-                System.out.println("Run away!");
+                System.out.println("Avoiding asteroid!");
             }
+
+            if (distanceFromGasCloud < 10) {
+                playerAction.heading = (getHeadingBetween(nearestGasCloud) + 90) % 360;
+                playerAction.action = PlayerActions.FORWARD;
+                System.out.println("Avoiding gas cloud!");
+            }
+
+
+            if (distanceFromWorldCenter + (1.5 * bot.size) > gameState.world.getRadius()) { // avoid edge of world
+                playerAction.heading = getHeadingBetween(worldCenter);
+                playerAction.action = PlayerActions.FORWARD;
+                botAction = "Going for center!";
+            }
+            
+            
         }
-        this.playerAction = playerAction;
+        System.out.println(botAction);
+        this.playerAction =  playerAction;
     }
+    
 
     public GameState getGameState() {
         return this.gameState;

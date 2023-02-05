@@ -10,15 +10,24 @@ public class GameObject {
   public Integer currentHeading;
   public Position position;
   public ObjectTypes gameObjectType;
+  public Integer effects;
   public Integer torpedoSalvoCount;
+  public Integer superNovaAvailable;
+  public Integer teleporterCount;
+  public Integer shieldCount;
 
-  public GameObject(UUID id, Integer size, Integer speed, Integer currentHeading, Position position, ObjectTypes gameObjectType) {
+  public GameObject(UUID id, Integer size, Integer speed, Integer currentHeading, Position position, ObjectTypes gameObjectType, Integer effects, Integer torpedoSalvoCount, Integer superNovaAvailable, Integer teleporterCount, Integer shieldCount) {
     this.id = id;
     this.size = size;
     this.speed = speed;
     this.currentHeading = currentHeading;
     this.position = position;
     this.gameObjectType = gameObjectType;
+    this.effects = effects;
+    this.torpedoSalvoCount = torpedoSalvoCount;
+    this.superNovaAvailable = superNovaAvailable;
+    this.teleporterCount = teleporterCount;
+    this.shieldCount = shieldCount;
   }
 
   public UUID getId() {
@@ -61,17 +70,63 @@ public class GameObject {
     this.gameObjectType = gameObjectType;
   }
 
+  public int getEffects() {
+    return effects;
+  }
+
+  public void setEffects(int effects) {
+    this.effects = effects;
+  }
+
   public int getTorpedoSalvoCount() {
     return torpedoSalvoCount;
   }
 
-  public int setTorpedoSalvoCount(int torpedoSalvoCount) {
-    return this.torpedoSalvoCount = torpedoSalvoCount;
+  public void setTorpedoSalvoCount(int torpedoSalvoCount) {
+    this.torpedoSalvoCount = torpedoSalvoCount;
+  } 
+
+  public int getSuperNovaAvailable() {
+    return superNovaAvailable;
+  }
+
+  public void setSuperNovaAvailable(int superNovaAvailable) {
+    this.superNovaAvailable = superNovaAvailable;
+  }
+
+  public int getTeleporterCount() {
+    return teleporterCount;
+  }
+
+  public void setTeleporterCount(int teleporterCount) {
+    this.teleporterCount = teleporterCount;
+  }
+
+  public int getShieldCount() {
+    return shieldCount;
+  }
+
+  public void setShieldCount(int shieldCount) {
+    this.shieldCount = shieldCount;
+  }
+
+  public int getCurrentHeading() {
+    return currentHeading;
+  }
+
+  public void setCurrentHeading(int currentHeading) {
+    this.currentHeading = currentHeading;
   }
 
   public static GameObject FromStateList(UUID id, List<Integer> stateList)
   {
     Position position = new Position(stateList.get(4), stateList.get(5));
-    return new GameObject(id, stateList.get(0), stateList.get(1), stateList.get(2), position, ObjectTypes.valueOf(stateList.get(3)));
+    if (stateList.size() == 7){
+      return new GameObject(id, stateList.get(0), stateList.get(1), stateList.get(2), position, ObjectTypes.valueOf(stateList.get(3)), 0, 0, 0, 0, 0);
+    }
+    else{ // size == 11
+      // System.out.println("stateList: " + stateList);
+      return new GameObject(id, stateList.get(0), stateList.get(1), stateList.get(2), position, ObjectTypes.valueOf(stateList.get(3)), stateList.get(6), stateList.get(7), stateList.get(8), stateList.get(9), stateList.get(10));
+    }
   }
 }

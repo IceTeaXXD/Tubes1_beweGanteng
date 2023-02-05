@@ -10,7 +10,7 @@ public enum ObjectTypes {
   SUPER_FOOD(7),
   SUPERNOVA_PICKUP(8),
   SUPERNOVA_BOMB(9),
-  TELEPORT(10),
+  TELEPORTER(10),
   SHIELD(11);
 
   public final Integer value;
