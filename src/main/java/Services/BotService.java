@@ -108,12 +108,14 @@ public class BotService {
                     playerAction.action = PlayerActions.FORWARD;
                     botAction = "Chasing smaller player!";
                     if (teleportTick != null){
-                        if (gameState.getWorld().getCurrentTick() - teleportTick > 10){
+                        if ((gameState.getWorld().getCurrentTick() - teleportTick) > 5){
+                            System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
                             playerAction.action = PlayerActions.TELEPORT;
                             teleportTick = null;
                         }
                     }   
-                    if (bot.getTeleporterCount() > 0 && teleportTick == null && nearestPlayer.size < bot.size + 40){
+                    if (bot.getTeleporterCount() > 0 && teleportTick == null && nearestPlayer.size < (bot.getSize() + 21)){
+                        System.out.println(nearestPlayer.size);
                         playerAction.action = PlayerActions.FIRETELEPORT;
                         botAction = "Teleporting!TeleportingTeleportingTeleportingTeleportingTeleportingTeleportingTeleportingTeleporting";
                         teleportTick = gameState.getWorld().getCurrentTick();
