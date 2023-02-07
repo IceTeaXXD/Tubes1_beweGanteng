@@ -68,11 +68,11 @@ public class BotService {
             var distanceFromWorldCenter = getDistanceBetween(bot, worldCenter);
             var distanceFromGasCloud = getDistanceBetween(bot, nearestGasCloud);
             var distanceFromAsteroid = getDistanceBetween(bot, nearestAsteroid);
-            // var torpedoList = gameState.getGameObjects()
-            //         .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TORPEDO_SALVO)
-            //         .sorted(Comparator
-            //                 .comparing(item -> getDistanceBetween(bot, item)))
-            //         .collect(Collectors.toList());
+            var torpedoList = gameState.getGameObjects()
+                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.TORPEDO_SALVO)
+                    .sorted(Comparator
+                            .comparing(item -> getDistanceBetween(bot, item)))
+                    .collect(Collectors.toList());
 
             System.out.println("Nearest player size: " + nearestPlayer.size);
             System.out.println("Bot size: " + bot.size);
@@ -87,7 +87,7 @@ public class BotService {
                 playerAction.action = PlayerActions.FORWARD;
                 botAction = "Super food!";
             }
-            if (nearestPlayer.size > bot.size && bot.size > 30) {
+            if (nearestPlayer.size > bot.size && bot.size > 30 && getDistanceBetween(nearestPlayer, bot) < 500) {
                 if (getDistanceBetween(bot, nearestPlayer) < 150){
                     playerAction.heading = (getHeadingBetween(nearestPlayer) + 90) % 360;
                     playerAction.action = PlayerActions.FORWARD;
@@ -97,7 +97,7 @@ public class BotService {
                     playerAction.action = PlayerActions.FIRETORPEDOES;
                     botAction = "Attacking bigger player!";
                 }
-            }else if (nearestPlayer.size < bot.size && bot.size > 30) {
+            }else if (nearestPlayer.size < bot.size && bot.size > 30 && getDistanceBetween(nearestPlayer, bot) < 500) {
                 if (bot.torpedoSalvoCount > 0){
                     playerAction.heading = getHeadingBetween(nearestPlayer);
                     playerAction.action = PlayerActions.FIRETORPEDOES;
@@ -122,11 +122,12 @@ public class BotService {
                     }
                 }
             }
-
-            // if (bot.shieldCount > 0 && getDistanceBetween(bot, torpedoList.get(0))) {
-            //     playerAction.action = PlayerActions.ACTIVATESHIELD;
-            //     System.out.println("Shield!");
-            // }
+            if (torpedoList.size() > 0) {
+                if (bot.shieldCount > 0 && bot.size > 30 && torpedoList.get(0).currentHeading == (getHeadingBetween(torpedoList.get(0)) + 180) % 360) {
+                    playerAction.action = PlayerActions.ACTIVATESHIELD;
+                    System.out.println("Shield!-------------------------------------------------------------------------");
+                }
+            }
 
             if (distanceFromAsteroid < 10) {
                 playerAction.heading = (getHeadingBetween(nearestAsteroid) + 90) % 360;
@@ -134,14 +135,14 @@ public class BotService {
                 System.out.println("Avoiding asteroid!");
             }
 
-            if (distanceFromGasCloud < 10) {
+            if (distanceFromGasCloud < 100) {
                 playerAction.heading = (getHeadingBetween(nearestGasCloud) + 90) % 360;
                 playerAction.action = PlayerActions.FORWARD;
                 System.out.println("Avoiding gas cloud!");
             }
 
 
-            if (distanceFromWorldCenter + (1.5 * bot.size) > gameState.world.getRadius()) { // avoid edge of world
+            if (distanceFromWorldCenter + (2 * bot.size) > gameState.world.getRadius()) { // avoid edge of world
                 playerAction.heading = getHeadingBetween(worldCenter);
                 playerAction.action = PlayerActions.FORWARD;
                 botAction = "Going for center!";
