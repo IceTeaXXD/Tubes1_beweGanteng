@@ -13,7 +13,8 @@ public class BotService {
     public String botAction;
     private Integer tickCount = 0;
     private boolean isFired = false;
-
+    private boolean isTeleported = false;
+    private Integer tickTeleport = 0;
     public BotService() {
         this.playerAction = new PlayerAction();
         this.gameState = new GameState();
@@ -92,27 +93,38 @@ public class BotService {
                 /* ATTACKING */
                 if (playerList.size() > 0){
                     var nearestPlayer = playerList.get(0);
-                    if (bot.size >= 20 && getDistanceBetween(bot, nearestPlayer) - bot.size - nearestPlayer.size < 300 && bot.torpedoSalvoCount > 0){
+                    if (bot.size > 30 && getDistanceBetween(bot, nearestPlayer) - bot.size - nearestPlayer.size < 300 && bot.torpedoSalvoCount > 0){
                         playerAction.heading = getHeadingBetween(nearestPlayer);
                         playerAction.action = PlayerActions.FIRETORPEDOES;
                         botAction = "FIRING TORPEDO";
                         isFired = true;
                     }
-                    // if (bot.size > 30 && bot.size > nearestPlayer.size && bot.teleporterCount && getDistanceBetween(bot, nearestPlayer) < 150){
-                    //     playerAction.heading = getHeadingBetween(nearestPlayer);
-                    //     playerAction.action = PlayerActions.FIRE_TELEPORTER;
-                    // }
-                    else if ((bot.getSize() - 20) > nearestPlayer.getSize() && getDistanceBetween(bot, nearestPlayer)< 300){
+                    if (bot.size > 40 && bot.size > nearestPlayer.size && bot.teleporterCount > 0 && getDistanceBetween(bot, nearestPlayer) - bot.size < 150 && !isTeleported){
+                        playerAction.heading = getHeadingBetween(nearestPlayer);
+                        playerAction.action = PlayerActions.FIRETELEPORT;
+                        botAction = "FIRE TELEPORTER";
+                        isTeleported = true;
+                        tickTeleport = gameState.getWorld().getCurrentTick();
+                    }
+                    if ((bot.getSize() - 20) > nearestPlayer.getSize() && getDistanceBetween(bot, nearestPlayer)< 300 && bot.shieldCount == 0 && bot.torpedoSalvoCount == 0){
                         playerAction.heading = getHeadingBetween(nearestPlayer);
                         playerAction.action = PlayerActions.FORWARD;
                         botAction = "CHASING SMALLER PLAYER";
                     }
+                    // if (bot.size > nearestPlayer.size && isTeleported && gameState.getWorld().getCurrentTick() - tickTeleport == 5){
+                    //     playerAction.heading = getHeadingBetween(nearestPlayer);
+                    //     playerAction.action = PlayerActions.TELEPORT;
+                    //     botAction = "TELEPORTING";
+                    //     System.out.println("TELEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+                    //     isTeleported = false;
+                    //     tickTeleport = gameState.getWorld().getCurrentTick();
+                    // }
                 }
 
                 /* DEFENSE */
                 if (torpedoList.size() > 0) {
-                    System.out.print("TORPEDO DISTANCEEEEEEEEEEEEEEEEEEEEEE : ");
-                    System.out.println(getDistanceBetween(bot, torpedoList.get(0)) - bot.getSize());
+                    // System.out.print("TORPEDO DISTANCEEEEEEEEEEEEEEEEEEEEEE : ");
+                    // System.out.println(getDistanceBetween(bot, torpedoList.get(0)) - bot.getSize());
                     if (!isFired && getDistanceBetween(bot, torpedoList.get(0)) - bot.getSize() < 100 && bot.shieldCount > 0 && bot.size > 40){
                         playerAction.heading = (getHeadingBetween(torpedoList.get(0)) + 180);
                         playerAction.action = PlayerActions.ACTIVATESHIELD;
@@ -148,6 +160,15 @@ public class BotService {
                     }
                 }
 
+                var nearestPlayer = playerList.get(0);
+                if (bot.size > 30 && getDistanceBetween(bot, nearestPlayer) - bot.size - nearestPlayer.size < 300 && bot.torpedoSalvoCount > 0 && playerList.size() == 1){
+                    playerAction.heading = getHeadingBetween(nearestPlayer);
+                    playerAction.action = PlayerActions.FIRETORPEDOES;
+                    botAction = "FIRING TORPEDO";
+                    isFired = true;
+                }
+
+
                 if (getDistanceBetween(bot, worldCenter) + bot.size + 100 > worldRadius) {
                     System.out.println("AVOIDING EDGE");
                     playerAction.heading = getHeadingBetween(worldCenter);
@@ -166,19 +187,26 @@ public class BotService {
                 //         botAction = "EATING SUPERFOOD";
                 //     }
                 // }
-                if (torpedoList.size() > 0) {
-                    System.out.print("TORPEDO DISTANCEEEEEEEEEEEEEEEEEEEEEE : ");
-                    System.out.println(getDistanceBetween(bot, torpedoList.get(0)) - bot.getSize());
-                    if (!isFired && getDistanceBetween(bot, torpedoList.get(0)) - bot.getSize() < 100 && bot.shieldCount > 0 && bot.size > 40){
-                        playerAction.heading = (getHeadingBetween(torpedoList.get(0)) + 180);
-                        playerAction.action = PlayerActions.ACTIVATESHIELD;
-                        botAction = "ACTIVATING SHIELD";
-                    }
+                // if (torpedoList.size() > 0) {
+                //     System.out.print("TORPEDO DISTANCEEEEEEEEEEEEEEEEEEEEEE : ");
+                //     System.out.println(getDistanceBetween(bot, torpedoList.get(0)) - bot.getSize());
+                //     if (!isFired && getDistanceBetween(bot, torpedoList.get(0)) - bot.getSize() < 100 && bot.shieldCount > 0 && bot.size > 40){
+                //         playerAction.heading = (getHeadingBetween(torpedoList.get(0)) + 180);
+                //         playerAction.action = PlayerActions.ACTIVATESHIELD;
+                //         botAction = "ACTIVATING SHIELD";
+                //     }
+                // }
+                if (bot.size > nearestPlayer.size && isTeleported && gameState.getWorld().getCurrentTick() - tickTeleport == 10){
+                    playerAction.heading = getHeadingBetween(nearestPlayer);
+                    playerAction.action = PlayerActions.TELEPORT;
+                    botAction = "TELEPORTING";
+                    isTeleported = false;
+                    tickTeleport = gameState.getWorld().getCurrentTick();
                 }
-
                 if (botAction != "FIRING TORPEDO" && isFired){
                     isFired = false;
                 }
+                System.out.println("Enemies : " + playerList.size());
                 System.out.println("Nearest player size: " + playerList.get(0).size);
                 System.out.println("Bot size: " + bot.size);
                 System.out.println("Distance from nearest player: " + getDistanceBetween(bot, playerList.get(0)));
