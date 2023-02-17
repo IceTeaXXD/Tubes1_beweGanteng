@@ -33,7 +33,7 @@ Avoiding edge of map by moving towards the center
 │   Dockerfile
 │   pom.xml
 │
-├───src                             # Source code
+├───src                    # Source code
 │    └──main
 │       └──java
 │            ├─ Enums
@@ -52,7 +52,7 @@ Avoiding edge of map by moving towards the center
 │            └──Main.java
 │            
 │            
-├───target
+├───target                # bytecode         
 │    ├─ classes
 │    │   ├─ Enums
 │    │   │    ├── ObjectTypes.class
@@ -67,7 +67,7 @@ Avoiding edge of map by moving towards the center
 │    │   │    
 │    │   ├─ Services
 │    │   │     └──BotService.class
-│    │   └──Main.class                          # bytecode
+│    │   └──Main.class                          
 │    │ 
 │    ├─ generated-sources
 │    ├─ libs
@@ -76,8 +76,7 @@ Avoiding edge of map by moving towards the center
 │    └──JavaBot.jar 
 │    
 │    
-└───doc                             # Documentation
-                                    # Testing Results
+└───doc                    # Documentation
 ```
 
 ## Local Setup
