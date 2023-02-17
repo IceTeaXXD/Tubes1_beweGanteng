@@ -2,9 +2,9 @@ package Enums;
 
 public enum Effects {
     AFTERBURNER(1),
-    ASTEROID_FIELD(2),
-    GAS_CLOUD(4),
-    SUPER_FOOD(8),
+    ASTEROIDFIELD(2),
+    GASCLOUD(4),
+    SUPERFOOD(8),
     SHIELD(16);
 
     public final Integer value;
