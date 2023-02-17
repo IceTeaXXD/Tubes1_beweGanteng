@@ -16,10 +16,7 @@ public class GameObject {
   public Integer teleporterCount;
   public Integer shieldCount;
 
-  public GameObject(UUID id, Integer size, Integer speed, 
-                    Integer currentHeading, Position position, ObjectTypes gameObjectType,
-                    Integer effects, Integer torpedoSalvoCount, Integer superNovaAvailable, Integer teleporterCount, Integer shieldCount)
-  {
+  public GameObject(UUID id, Integer size, Integer speed, Integer currentHeading, Position position, ObjectTypes gameObjectType, Integer effects, Integer torpedoSalvoCount, Integer superNovaAvailable, Integer teleporterCount, Integer shieldCount) {
     this.id = id;
     this.size = size;
     this.speed = speed;
@@ -87,7 +84,7 @@ public class GameObject {
 
   public void setTorpedoSalvoCount(int torpedoSalvoCount) {
     this.torpedoSalvoCount = torpedoSalvoCount;
-  }
+  } 
 
   public int getSuperNovaAvailable() {
     return superNovaAvailable;
@@ -121,19 +118,15 @@ public class GameObject {
     this.currentHeading = currentHeading;
   }
 
-  
   public static GameObject FromStateList(UUID id, List<Integer> stateList)
   {
     Position position = new Position(stateList.get(4), stateList.get(5));
     if (stateList.size() == 7){
-      return new GameObject(id, stateList.get(0), stateList.get(1), 
-                            stateList.get(2), position, ObjectTypes.valueOf(stateList.get(3)), 
-                            stateList.get(6), 0, 0, 0, 0);
-    } else {
-      return new GameObject(id, stateList.get(0), stateList.get(1), 
-                            stateList.get(2), position, ObjectTypes.valueOf(stateList.get(3)), 
-                            stateList.get(6), stateList.get(7), stateList.get(8), 
-                            stateList.get(9), stateList.get(10));
+      return new GameObject(id, stateList.get(0), stateList.get(1), stateList.get(2), position, ObjectTypes.valueOf(stateList.get(3)), 0, 0, 0, 0, 0);
+    }
+    else{ // size == 11
+      // System.out.println("stateList: " + stateList);
+      return new GameObject(id, stateList.get(0), stateList.get(1), stateList.get(2), position, ObjectTypes.valueOf(stateList.get(3)), stateList.get(6), stateList.get(7), stateList.get(8), stateList.get(9), stateList.get(10));
     }
   }
 }
