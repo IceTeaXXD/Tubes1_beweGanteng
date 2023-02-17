@@ -221,6 +221,7 @@ public class BotService {
                         bot.size > 50
                         && !isTeleported
                         && bot.teleporterCount > 0
+                        && isWorldCenterClear(playerList, worldCenter)
                     ){
                         playerAction.heading = getHeadingBetween(superNova.get(0));
                         playerAction.action = PlayerActions.FIRETELEPORT;
@@ -291,6 +292,15 @@ public class BotService {
                 this.playerAction = playerAction;
             }
         }
+    }
+
+    public boolean isWorldCenterClear(List<GameObject> players, GameObject worldCenter){
+        for (var player : players){
+            if (getDistanceBetween(player, worldCenter) - player.size < 80){
+                return false;
+            }
+        }
+        return true;
     }
 
     public boolean isBotInSight(List<GameObject> obstacles, GameObject target){
