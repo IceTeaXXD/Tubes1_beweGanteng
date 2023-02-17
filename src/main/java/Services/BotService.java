@@ -41,7 +41,6 @@ public class BotService {
     }
 
     public void computeNextPlayerAction(PlayerAction playerAction) {
-        // playerAction.action = PlayerActions.FORWARD;
         if (!gameState.getGameObjects().isEmpty()) {
             if (tickCount != gameState.getWorld().getCurrentTick()){
                 var worldRadius = gameState.getWorld().getRadius();
@@ -81,12 +80,18 @@ public class BotService {
                         .sorted(Comparator
                                 .comparing(item -> getDistanceBetween(bot, item)))
                         .collect(Collectors.toList());
+                var superNovaCloud = gameState.getGameObjects()
+                        .stream().filter(item -> item.getGameObjectType() == ObjectTypes.SUPERNOVA_BOMB)
+                        .sorted(Comparator
+                                .comparing(item -> getDistanceBetween(bot, item)))
+                        .collect(Collectors.toList());
+
                 /* EATING */
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getHeadingBetween(worldCenter);
                 if (foodList.size() > 0){
-                    var nearestFood = getHeadingBetween(foodList.get(0));
-                    playerAction.heading = nearestFood;
+                    var nearestFood = foodList.get(0);
+                    playerAction.heading = getHeadingBetween(nearestFood);
                     playerAction.action = PlayerActions.FORWARD;
                     botAction = "EATING FOOD";
                 }
@@ -175,6 +180,7 @@ public class BotService {
                     playerAction.heading = getHeadingBetween(worldCenter);
                 }
 
+                /* TELEPORTING */
                 if(playerList.size() > 0){
                     var nearestPlayer = playerList.get(0);
                     if (
@@ -208,6 +214,7 @@ public class BotService {
                     }
                 }
 
+                /* SUPERNOVA */
                 if (superNova.size() > 0){
                     System.out.println("SUPERNOVA DETECTED");
                     if (
@@ -260,6 +267,16 @@ public class BotService {
                     tickSuperNova = gameState.getWorld().getCurrentTick();
                 }
 
+                if (superNovaCloud.size() > 0){
+                    if (getDistanceBetween(bot, superNovaCloud.get(0)) - bot.size - superNovaCloud.get(0).size < 100){
+                        playerAction.heading = getHeadingBetween(superNovaCloud.get(0)) + 180;
+                        playerAction.action = PlayerActions.FORWARD;
+                        botAction = "RUNNING FROM SUPERNOVA";
+                    }
+                }
+
+                /* GAME STATE PRINT */
+                System.out.println("====================================================================================");
                 System.out.println("SUPERNOVA AVAILABLE : " + bot.superNovaAvailable);
                 System.out.println("Enemies : " + playerList.size());
                 System.out.println("Nearest player size: " + playerList.get(0).size);
@@ -270,6 +287,7 @@ public class BotService {
                 tickCount = gameState.getWorld().getCurrentTick();
                 System.out.println("Current Tick: " + tickCount);
                 System.out.println(botAction);
+                System.out.println("====================================================================================");
                 this.playerAction = playerAction;
             }
         }
