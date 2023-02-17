@@ -43,6 +43,7 @@ public class BotService {
     public void computeNextPlayerAction(PlayerAction playerAction) {
         if (!gameState.getGameObjects().isEmpty()) {
             if (tickCount != gameState.getWorld().getCurrentTick()){
+                /* Inisialisasi Variabel List Objek */
                 var worldRadius = gameState.getWorld().getRadius();
                 var worldCenter = new GameObject(UUID.randomUUID(), 0, 0, 0, new Position(0, 0), null, 0, 0, 0, 0, 0);
                 var foodList = gameState.getGameObjects()
@@ -86,9 +87,13 @@ public class BotService {
                                 .comparing(item -> getDistanceBetween(bot, item)))
                         .collect(Collectors.toList());
 
-                /* EATING */
+                /* Default Action  */
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getHeadingBetween(worldCenter);
+
+                /* Strategi Eating
+                 * Memakan makanan terdekat
+                 */
                 if (foodList.size() > 0){
                     var nearestFood = foodList.get(0);
                     playerAction.heading = getHeadingBetween(nearestFood);
@@ -96,9 +101,11 @@ public class BotService {
                     botAction = "EATING FOOD";
                 }
 
-                /* ATTACKING */
+                /* Strategi Attack */
                 if (playerList.size() > 0){
                     var nearestPlayer = playerList.get(0);
+
+                    /* Menembak musuh terdekat dengan kondisi yang ditentukan */
                     if (
                         isBotInSight(obstacleList, nearestPlayer)
                         && bot.size > 30 
@@ -110,6 +117,7 @@ public class BotService {
                         botAction = "FIRING TORPEDO";
                     }
 
+                    /* Mengejar musuh terdekat dengan kondisi yang ditentukan */
                     if (
                         (bot.getSize() - 20) > nearestPlayer.getSize() 
                         && getDistanceBetween(bot, nearestPlayer) < 300 
@@ -121,6 +129,7 @@ public class BotService {
                         botAction = "CHASING SMALLER PLAYER";
                     }
                     
+                    /* Menembak teleporter ke musuh terdekat dengan kondisi yang ditentukan */
                     if (
                         bot.size > 50 
                         && bot.size - 20 > nearestPlayer.size 
@@ -136,6 +145,7 @@ public class BotService {
                         tickTeleport = gameState.getWorld().getCurrentTick();
                     }
 
+                    /* Menembak teleporter ke musuh terkecil dengan kondisi yang ditentukan */
                     if (
                         bot.size > 50 
                         && bot.size - 20 > smallestPlayer.size 
@@ -152,7 +162,9 @@ public class BotService {
                     }
                 }
 
-                /* DEFENSE */
+                /* Strategi Defense */
+
+                /* Menjauhi musuh yang lebih besar dan sudah dekat dengan bot */
                 if (playerList.size() > 0){
                     var nearestPlayer = playerList.get(0);
                     if (bot.getSize() < 30 
@@ -165,6 +177,7 @@ public class BotService {
                     }
                 }
 
+                /* Menyalakan shield jika terdapat torpedo yang mengarah ke bot */
                 if (torpedoList.size() > 0) {
                     if (isTorpedoComing(torpedoList.get(0)) 
                         && getDistanceBetween(bot, torpedoList.get(0)) - bot.size < 100 
@@ -175,12 +188,14 @@ public class BotService {
                     }
                 }
 
+                /* Menghindari ujung dari map agar tidak mati */
                 if (getDistanceBetween(bot, worldCenter) + bot.size + 100 > worldRadius) {
                     System.out.println("AVOIDING EDGE");
                     playerAction.heading = getHeadingBetween(worldCenter);
                 }
 
                 /* TELEPORTING */
+                /* Untuk melakukan teleportasi, sebelumnya harus dipastikan telah menembak teleporter */
                 if(playerList.size() > 0){
                     var nearestPlayer = playerList.get(0);
                     if (
@@ -215,6 +230,7 @@ public class BotService {
                 }
 
                 /* SUPERNOVA */
+                /* Mencari supernova, yaitu berada di tengah map, akan melakukan teleportasi untuk pickup */
                 if (superNova.size() > 0){
                     System.out.println("SUPERNOVA DETECTED");
                     if (
@@ -248,6 +264,7 @@ public class BotService {
                         }
                 }
 
+                /* Menembakkan supernova dengan kondisi yang ditentukan */
                 if (
                     superNovaFired
                     && gameState.getWorld().getCurrentTick() - tickSuperNova >= (getDistanceBetween(bot,biggestPlayer) - biggestPlayer.size - bot.size) / 20
@@ -295,6 +312,10 @@ public class BotService {
     }
 
     public boolean isWorldCenterClear(List<GameObject> players, GameObject worldCenter){
+        /*
+         * I.S. Menerima input player dan world center yang akan dicek
+         * F.S. Mengembalikan true jika world center tidak ada player di sekitarnya
+         */
         for (var player : players){
             if (getDistanceBetween(player, worldCenter) - player.size < 80){
                 return false;
@@ -304,7 +325,10 @@ public class BotService {
     }
 
     public boolean isBotInSight(List<GameObject> obstacles, GameObject target){
-        // check if bot is heading to target but there is an obstacle in the way
+        /*
+         * I.S. Menerima input target dan obstacle yang akan dicek
+         * F.S. Mengembalikan true jika bot tidak ada di jalan pandang target
+         */
         for (var obstacle : obstacles){
             if (
                 getDistanceBetween(bot, obstacle) < getDistanceBetween(bot, target)
@@ -317,6 +341,10 @@ public class BotService {
     } 
 
     public boolean isTorpedoComing(GameObject torpedo){
+        /*
+         * I.S. Menerima input torpedo yang akan dicek
+         * F.S. Mengembalikan true jika torpedo akan menabrak bot
+         */
         if (torpedo.getCurrentHeading() >= 0 
             && torpedo.getCurrentHeading() <= 90
             && bot.getCurrentHeading() >= 180 
