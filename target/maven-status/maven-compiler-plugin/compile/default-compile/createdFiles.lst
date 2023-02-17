@@ -1,5 +1,4 @@
 Main.class
-Enums\Effects.class
 Enums\PlayerActions.class
 Models\GameState.class
 Services\BotService.class
