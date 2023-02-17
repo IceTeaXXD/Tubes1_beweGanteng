@@ -12,7 +12,6 @@ public class BotService {
     private GameState gameState;
     public String botAction;
     private Integer tickCount = 0;
-    private boolean isFired = false;
     private boolean isTeleported = false;
     private boolean teleportNear = false;
     private boolean teleportSmall = false;
@@ -21,7 +20,6 @@ public class BotService {
         this.playerAction = new PlayerAction();
         this.gameState = new GameState();
     }
-
 
     public GameObject getBot() {
         return this.bot;
@@ -70,6 +68,12 @@ public class BotService {
                         .sorted(Comparator
                                 .comparing(item -> item.getSize()))
                         .collect(Collectors.toList()).get(0);
+                var obstacleList = gameState.getGameObjects()
+                        .stream().filter(item -> ((item.getGameObjectType() == ObjectTypes.GAS_CLOUD) || item.getGameObjectType() == ObjectTypes.ASTEROID_FIELD) || item.getGameObjectType() == ObjectTypes.WORMHOLE)
+                        .sorted(Comparator
+                                .comparing(item -> getDistanceBetween(bot, item)))
+                        .collect(Collectors.toList());
+                
                 /* EATING */
                 playerAction.action = PlayerActions.FORWARD;
                 playerAction.heading = getHeadingBetween(worldCenter);
@@ -91,20 +95,33 @@ public class BotService {
                 /* ATTACKING */
                 if (playerList.size() > 0){
                     var nearestPlayer = playerList.get(0);
-                    if (bot.size > 30 && getDistanceBetween(bot, nearestPlayer) - bot.size - nearestPlayer.size < 300 && bot.torpedoSalvoCount > 0){
+                    if (
+                        bot.size > 30 
+                        && getDistanceBetween(bot, nearestPlayer) - bot.size - nearestPlayer.size < 300 
+                        && bot.torpedoSalvoCount > 0
+                        ){
                         playerAction.heading = getHeadingBetween(nearestPlayer);
                         playerAction.action = PlayerActions.FIRETORPEDOES;
                         botAction = "FIRING TORPEDO";
-                        isFired = true;
                     }
 
-                    if ((bot.getSize() - 20) > nearestPlayer.getSize() && getDistanceBetween(bot, nearestPlayer)< 300 && bot.shieldCount == 0 && bot.torpedoSalvoCount == 0){
+                    if (
+                        (bot.getSize() - 20) > nearestPlayer.getSize() 
+                        && getDistanceBetween(bot, nearestPlayer)< 300 
+                        && bot.shieldCount == 0 
+                        && bot.torpedoSalvoCount == 0
+                        ){
                         playerAction.heading = getHeadingBetween(nearestPlayer);
                         playerAction.action = PlayerActions.FORWARD;
                         botAction = "CHASING SMALLER PLAYER";
                     }
                     
-                    if (bot.size > 40 && bot.size - 20 > nearestPlayer.size && bot.teleporterCount > 0 && !isTeleported && getDistanceBetween(bot, nearestPlayer) - bot.size - nearestPlayer.size < 600){
+                    if (
+                        bot.size > 50 
+                        && bot.size - 20 > nearestPlayer.size 
+                        && bot.teleporterCount > 0 && !isTeleported 
+                        // && getDistanceBetween(bot, nearestPlayer) - bot.size - nearestPlayer.size < 600
+                        ){
                         playerAction.heading = getHeadingBetween(nearestPlayer);
                         playerAction.action = PlayerActions.FIRETELEPORT;
                         botAction = "FIRE TELEPORTER";
@@ -114,7 +131,12 @@ public class BotService {
                         tickTeleport = gameState.getWorld().getCurrentTick();
                     }
 
-                    if (bot.size > 40 && bot.size - 20 > smallestPlayer.size && bot.teleporterCount > 0 && !isTeleported && getDistanceBetween(bot, smallestPlayer) - bot.size - nearestPlayer.size < 600){
+                    if (
+                        bot.size > 50 
+                        && bot.size - 20 > smallestPlayer.size 
+                        && bot.teleporterCount > 0 && !isTeleported 
+                        // && getDistanceBetween(bot, smallestPlayer) - bot.size - nearestPlayer.size < 600
+                        ){
                         playerAction.heading = getHeadingBetween(smallestPlayer);
                         playerAction.action = PlayerActions.FIRETELEPORT;
                         botAction = "FIRE TELEPORTER";
@@ -128,7 +150,10 @@ public class BotService {
                 /* DEFENSE */
                 if (playerList.size() > 0){
                     var nearestPlayer = playerList.get(0);
-                    if (bot.getSize() < 30 && bot.getSize() < nearestPlayer.getSize() && getDistanceBetween(bot, nearestPlayer) - bot.getSize() - nearestPlayer.getSize() < 100 + bot.size){
+                    if (bot.getSize() < 30 
+                        && bot.getSize() < nearestPlayer.getSize() 
+                        && getDistanceBetween(bot, nearestPlayer) - bot.getSize() - nearestPlayer.getSize() < 100 + bot.size
+                        ){
                         playerAction.heading = (getHeadingBetween(nearestPlayer) + 180);
                         playerAction.action = PlayerActions.FORWARD;
                         botAction = "RUNNING FROM BIGGER PLAYER";
@@ -136,10 +161,10 @@ public class BotService {
                 }
 
                 if (torpedoList.size() > 0) {
-                    System.out.println("Torpedo Current Heading : " + torpedoList.get(0).getCurrentHeading());
-                    System.out.println("Torpedo Heading : " + getHeadingBetween(torpedoList.get(0)));
-                    if (isTorpedoComing(torpedoList.get(0)) && getDistanceBetween(bot, torpedoList.get(0)) - bot.size < 70 && bot.shieldCount > 0 && bot.size > 40){
-                        playerAction.heading = (getHeadingBetween(torpedoList.get(0)) + 180);
+                    if (isTorpedoComing(torpedoList.get(0)) 
+                        && getDistanceBetween(bot, torpedoList.get(0)) - bot.size < 70 
+                        && bot.shieldCount > 0 && bot.size > 40
+                        ){
                         playerAction.action = PlayerActions.ACTIVATESHIELD;
                         botAction = "ACTIVATING SHIELD";
                     }
@@ -150,7 +175,11 @@ public class BotService {
                     playerAction.heading = getHeadingBetween(worldCenter);
                 }
 
-                if (bot.size > nearestPlayer.size && isTeleported && gameState.getWorld().getCurrentTick() - tickTeleport >= (getDistanceBetween(bot, nearestPlayer) - bot.size - nearestPlayer.size) / 20 && teleportNear){
+                if (bot.size > nearestPlayer.size 
+                    && isTeleported 
+                    && gameState.getWorld().getCurrentTick() - tickTeleport >= (getDistanceBetween(bot, nearestPlayer) - bot.size - nearestPlayer.size) / 20 
+                    && teleportNear
+                    ){
                     playerAction.heading = getHeadingBetween(nearestPlayer);
                     playerAction.action = PlayerActions.TELEPORT;
                     botAction = "TELEPORTING";
@@ -160,7 +189,11 @@ public class BotService {
                     tickTeleport = gameState.getWorld().getCurrentTick();
                 }
 
-                if (bot.size > smallestPlayer.size && isTeleported && gameState.getWorld().getCurrentTick() - tickTeleport >= (getDistanceBetween(bot, smallestPlayer) - bot.size - smallestPlayer.size) / 20 && teleportSmall){
+                if (bot.size > smallestPlayer.size 
+                    && isTeleported 
+                    && gameState.getWorld().getCurrentTick() - tickTeleport >= (getDistanceBetween(bot, smallestPlayer) - bot.size - smallestPlayer.size) / 20 
+                    && teleportSmall
+                    ){
                     playerAction.heading = getHeadingBetween(smallestPlayer);
                     playerAction.action = PlayerActions.TELEPORT;
                     botAction = "TELEPORTING";
@@ -169,9 +202,7 @@ public class BotService {
                     teleportSmall = false;
                     tickTeleport = gameState.getWorld().getCurrentTick();
                 }
-                if (botAction != "FIRING TORPEDO" && isFired){
-                    isFired = false;
-                }
+
                 System.out.println("Enemies : " + playerList.size());
                 System.out.println("Nearest player size: " + playerList.get(0).size);
                 System.out.println("Distance from nearest player: " + getDistanceBetween(bot, playerList.get(0)));
@@ -186,19 +217,41 @@ public class BotService {
         }
     }
 
-    private int getHeadingToBot(GameObject otherObject) {
-        var direction = toDegrees(Math.atan2(bot.getPosition().y - otherObject.getPosition().y,
-                bot.getPosition().x - otherObject.getPosition().x));
-        return (direction + 360) % 360;
-    }
-
-    private boolean botInSight(GameObject otherObject) {
-        for (int i = 0; i < 45; i++) {
-            if (getHeadingToBot(otherObject) + i == otherObject.getCurrentHeading() || getHeadingToBot(otherObject) - i == otherObject.getCurrentHeading()) {
-                return true;
-            }
+    private boolean isTorpedoComing(GameObject torpedo){
+        if (torpedo.getCurrentHeading() >= 0 
+            && torpedo.getCurrentHeading() <= 90
+            && bot.getCurrentHeading() >= 180 
+            && bot.getCurrentHeading() <= 270
+            ){
+            return true;
         }
-        return false;
+        else if (
+            torpedo.getCurrentHeading() >= 90 
+            && torpedo.getCurrentHeading() <= 180 
+            && bot.getCurrentHeading() >= 270 
+            && bot.getCurrentHeading() <= 360
+            ){
+            return true;
+        }
+        else if (
+            torpedo.getCurrentHeading() >= 180 
+            && torpedo.getCurrentHeading() <= 270 
+            && bot.getCurrentHeading() >= 0 
+            && bot.getCurrentHeading() <= 90
+            ){
+            return true;
+        }
+        else if (
+            torpedo.getCurrentHeading() >= 270 
+            && torpedo.getCurrentHeading() <= 360 
+            && bot.getCurrentHeading() >= 90 
+            && bot.getCurrentHeading() <= 180
+            ){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
     public GameState getGameState() {
@@ -225,22 +278,6 @@ public class BotService {
         var direction = toDegrees(Math.atan2(otherObject.getPosition().y - bot.getPosition().y,
                 otherObject.getPosition().x - bot.getPosition().x));
         return (direction + 360) % 360;
-    }
-    
-    private boolean isTorpedoComing(GameObject torpedo){
-        System.out.println("Torpedo Current Heading : " + torpedo.getCurrentHeading());
-        System.out.println("Torpedo Heading : " + getHeadingBetween(torpedo));
-        if (torpedo.getCurrentHeading() >= 0 && torpedo.getCurrentHeading() <= 90 && bot.getCurrentHeading() >= 180 && bot.getCurrentHeading() <= 270){
-            return true;
-        }else if (torpedo.getCurrentHeading() >= 90 && torpedo.getCurrentHeading() <= 180 && bot.getCurrentHeading() >= 270 && bot.getCurrentHeading() <= 360){
-            return true;
-        }else if (torpedo.getCurrentHeading() >= 180 && torpedo.getCurrentHeading() <= 270 && bot.getCurrentHeading() >= 0 && bot.getCurrentHeading() <= 90){
-            return true;
-        }else if (torpedo.getCurrentHeading() >= 270 && torpedo.getCurrentHeading() <= 360 && bot.getCurrentHeading() >= 90 && bot.getCurrentHeading() <= 180){
-            return true;
-        }else{
-            return false;
-        }
     }
 
     private int toDegrees(double v) {
