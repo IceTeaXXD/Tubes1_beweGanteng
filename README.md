@@ -100,3 +100,6 @@ Avoiding edge of map by moving towards the center
 
 7. More instructions please head to
 [Galaxio-2021 GitHub Repository](https://github.com/EntelectChallenge/2021-Galaxio)
+
+## Documentation
+![This is us!](https://raw.githubusercontent.com/IceTeaXXD/Tubes1_beweGanteng/main/doc/Foto-kelompok.jpg?token=GHSAT0AAAAAAB5KSVCQQEM6ORA3EM6YXAE4Y7PWBXA)
